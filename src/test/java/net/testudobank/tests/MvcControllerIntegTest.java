@@ -1582,4 +1582,81 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
     cryptoTransactionTester.test(cryptoTransaction);
   }
 
+  @Test
+  public void testValidApplyingInterestToBalance() throws SQLException, ScriptException {
+    double CUSTOMER1_BALANCE = 123.45;
+    double INTEREST_RATE = 1.015;
+    int CUSTOMER1_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_BALANCE);
+    MvcControllerIntegTestHelpers.addCustomerToDB(dbDelegate, CUSTOMER1_ID, CUSTOMER1_PASSWORD, CUSTOMER1_FIRST_NAME, CUSTOMER1_LAST_NAME, CUSTOMER1_BALANCE_IN_PENNIES, 5);
+
+    User customer1AddInterestRateForm = new User();
+    customer1AddInterestRateForm.setUsername(CUSTOMER1_ID);
+    customer1AddInterestRateForm.setPassword(CUSTOMER1_PASSWORD);
+    customer1AddInterestRateForm.setNumDepositsForInterest(5);
+
+    controller.applyInterest(customer1AddInterestRateForm);
+
+    List<Map<String,Object>> customersTableData = jdbcTemplate.queryForList("SELECT * FROM Customers;");
+
+    assertEquals(1, customersTableData.size());
+    Map<String,Object> customer1Data = customersTableData.get(0);
+    assertEquals(CUSTOMER1_ID, (String)customer1Data.get("CustomerID"));
+
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE = CUSTOMER1_BALANCE * INTEREST_RATE;
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_EXPECTED_FINAL_BALANCE);
+    System.out.println("Num deposits :" + (int)customer1Data.get("NumDepositsForInterest"));
+    assertEquals(CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES, (int)customer1Data.get("Balance"));
+  }
+
+  @Test
+  public void testInvalidApplyingInterestToBalance() throws SQLException, ScriptException {
+    double CUSTOMER1_BALANCE = 19.99;
+    double INTEREST_RATE = 1.015;
+    int CUSTOMER1_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_BALANCE);
+    MvcControllerIntegTestHelpers.addCustomerToDB(dbDelegate, CUSTOMER1_ID, CUSTOMER1_PASSWORD, CUSTOMER1_FIRST_NAME, CUSTOMER1_LAST_NAME, CUSTOMER1_BALANCE_IN_PENNIES, 5);
+
+    User customer1AddInterestRateForm = new User();
+    customer1AddInterestRateForm.setUsername(CUSTOMER1_ID);
+    customer1AddInterestRateForm.setPassword(CUSTOMER1_PASSWORD);
+    customer1AddInterestRateForm.setNumDepositsForInterest(5);
+
+    controller.applyInterest(customer1AddInterestRateForm);
+
+    List<Map<String,Object>> customersTableData = jdbcTemplate.queryForList("SELECT * FROM Customers;");
+
+    assertEquals(1, customersTableData.size());
+    Map<String,Object> customer1Data = customersTableData.get(0);
+    assertEquals(CUSTOMER1_ID, (String)customer1Data.get("CustomerID"));
+
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE = CUSTOMER1_BALANCE * INTEREST_RATE;
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_EXPECTED_FINAL_BALANCE);
+    System.out.println("Num deposits :" + (int)customer1Data.get("NumDepositsForInterest"));
+    assertEquals(CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES, (int)customer1Data.get("Balance"));
+  }
+
+  @Test
+  public void testEdgeCaseApplyingInterestToBalance() throws SQLException, ScriptException {
+    double CUSTOMER1_BALANCE = 20.00;
+    double INTEREST_RATE = 1.015;
+    int CUSTOMER1_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_BALANCE);
+    MvcControllerIntegTestHelpers.addCustomerToDB(dbDelegate, CUSTOMER1_ID, CUSTOMER1_PASSWORD, CUSTOMER1_FIRST_NAME, CUSTOMER1_LAST_NAME, CUSTOMER1_BALANCE_IN_PENNIES, 5);
+
+    User customer1AddInterestRateForm = new User();
+    customer1AddInterestRateForm.setUsername(CUSTOMER1_ID);
+    customer1AddInterestRateForm.setPassword(CUSTOMER1_PASSWORD);
+    customer1AddInterestRateForm.setNumDepositsForInterest(5);
+
+    controller.applyInterest(customer1AddInterestRateForm);
+
+    List<Map<String,Object>> customersTableData = jdbcTemplate.queryForList("SELECT * FROM Customers;");
+
+    assertEquals(1, customersTableData.size());
+    Map<String,Object> customer1Data = customersTableData.get(0);
+    assertEquals(CUSTOMER1_ID, (String)customer1Data.get("CustomerID"));
+
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE = CUSTOMER1_BALANCE * INTEREST_RATE;
+    double CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES = MvcControllerIntegTestHelpers.convertDollarsToPennies(CUSTOMER1_EXPECTED_FINAL_BALANCE);
+    System.out.println("Num deposits :" + (int)customer1Data.get("NumDepositsForInterest"));
+    assertEquals(CUSTOMER1_EXPECTED_FINAL_BALANCE_IN_PENNIES, (int)customer1Data.get("Balance"));
+  }
 }
