@@ -47,10 +47,12 @@ public class MvcController {
   public static String TRANSACTION_HISTORY_TRANSFER_RECEIVE_ACTION = "TransferReceive";
   public static String TRANSACTION_HISTORY_CRYPTO_SELL_ACTION = "CryptoSell";
   public static String TRANSACTION_HISTORY_CRYPTO_BUY_ACTION = "CryptoBuy";
+  public static String TRANSACTION_HISTORY_INTEREST_ACTION = "Interest Applied";
   public static String CRYPTO_HISTORY_SELL_ACTION = "Sell";
   public static String CRYPTO_HISTORY_BUY_ACTION = "Buy";
   public static Set<String> SUPPORTED_CRYPTOCURRENCIES = new HashSet<>(Arrays.asList("ETH", "SOL"));
   private static double BALANCE_INTEREST_RATE = 1.015;
+  private static int NUM_DEPOSITS_FOR_INTEREST = 5;
 
   public MvcController(@Autowired JdbcTemplate jdbcTemplate, @Autowired CryptoPriceClient cryptoPriceClient) {
     this.jdbcTemplate = jdbcTemplate;
@@ -238,6 +240,7 @@ public class MvcController {
     user.setEthPrice(cryptoPriceClient.getCurrentEthValue());
     user.setSolPrice(cryptoPriceClient.getCurrentSolValue());
     user.setNumDepositsForInterest(user.getNumDepositsForInterest());
+    user.setInterestRate("1.5%");
   }
 
   // Converts dollar amounts in frontend to penny representation in backend MySQL DB
@@ -348,6 +351,11 @@ public class MvcController {
 
     } else { // simple deposit case
       TestudoBankRepository.increaseCustomerCashBalance(jdbcTemplate, userID, userDepositAmtInPennies);
+      //Increment the number of deposits for interest on a valid deposit of greater than or equal to 20
+      if (userDepositAmt >= 20) {
+        int currCustomerNumberofDepositsForInterest = TestudoBankRepository.getCustomerNumberOfDepositsForInterest(jdbcTemplate, userID);
+        TestudoBankRepository.setCustomerNumberOfDepositsForInterest(jdbcTemplate, userID, currCustomerNumberofDepositsForInterest + 1);
+      }
     }
 
     // only adds deposit to transaction history if is not transfer
@@ -803,8 +811,9 @@ public class MvcController {
   }
 
   /**
+   * Apply interest to the customer account if the customer has 5 deposits each over $20.
    * 
-   * 
+   * Will be called in deposit to check to determine to apply the interest or not.
    * @param user
    * @return "account_info" if interest applied. Otherwise, redirect to "welcome" page.
    */
@@ -828,13 +837,15 @@ public class MvcController {
 
     int numOfDeposits = TestudoBankRepository.getCustomerNumberOfDepositsForInterest(jdbcTemplate, userID);
     double userBalanceInPennies = TestudoBankRepository.getCustomerCashBalanceInPennies(jdbcTemplate, userID);
-    double userBalanceInDollars = userBalanceInPennies/100;
 
-    System.out.println("Number of deposits for user " + numOfDeposits);
-    System.out.println("User final balance " + userBalanceInDollars);
-    if (numOfDeposits == 5 && userBalanceInDollars >= 20) {
+    //Applies interest to user account, resets the number of deposits for interest back to 0, and updates the transaction history table
+    if (numOfDeposits == NUM_DEPOSITS_FOR_INTEREST) {
+      String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date());
       int userBalanceInPenniesWithInterest = (int) (userBalanceInPennies * BALANCE_INTEREST_RATE);
+      int userInterestRateAppliedAmount = (int) (userBalanceInPenniesWithInterest - userBalanceInPennies);
       TestudoBankRepository.setCustomerCashBalance(jdbcTemplate, userID, userBalanceInPenniesWithInterest);
+      TestudoBankRepository.setCustomerNumberOfDepositsForInterest(jdbcTemplate, userID, 0);
+      TestudoBankRepository.insertRowToTransactionHistoryTable(jdbcTemplate, userID, currentTime, TRANSACTION_HISTORY_INTEREST_ACTION, userInterestRateAppliedAmount);;
       return "account_info";
     } else {
       return "welcome";
