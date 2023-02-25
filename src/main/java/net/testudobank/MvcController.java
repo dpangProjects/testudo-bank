@@ -348,6 +348,11 @@ public class MvcController {
 
     } else { // simple deposit case
       TestudoBankRepository.increaseCustomerCashBalance(jdbcTemplate, userID, userDepositAmtInPennies);
+      //Increment the number of deposits for interest on a valid deposit of greater than or equal to 20
+      if (userDepositAmt >= 20) {
+        int currCustomerNumberofDepositsForInterest = TestudoBankRepository.getCustomerNumberOfDepositsForInterest(jdbcTemplate, userID);
+        TestudoBankRepository.setCustomerNumberOfDepositsForInterest(jdbcTemplate, userID, currCustomerNumberofDepositsForInterest + 1);
+      }
     }
 
     // only adds deposit to transaction history if is not transfer
@@ -803,8 +808,9 @@ public class MvcController {
   }
 
   /**
+   * Apply interest to the customer account if the customer has 5 deposits each over $20.
    * 
-   * 
+   * Will be called in deposit to check to determine to apply the interest or not.
    * @param user
    * @return "account_info" if interest applied. Otherwise, redirect to "welcome" page.
    */
@@ -828,13 +834,12 @@ public class MvcController {
 
     int numOfDeposits = TestudoBankRepository.getCustomerNumberOfDepositsForInterest(jdbcTemplate, userID);
     double userBalanceInPennies = TestudoBankRepository.getCustomerCashBalanceInPennies(jdbcTemplate, userID);
-    double userBalanceInDollars = userBalanceInPennies/100;
 
-    System.out.println("Number of deposits for user " + numOfDeposits);
-    System.out.println("User final balance " + userBalanceInDollars);
-    if (numOfDeposits == 5 && userBalanceInDollars >= 20) {
+    //Applies interest to user account and resets the number of deposits for interest back to 0
+    if (numOfDeposits == 5) {
       int userBalanceInPenniesWithInterest = (int) (userBalanceInPennies * BALANCE_INTEREST_RATE);
       TestudoBankRepository.setCustomerCashBalance(jdbcTemplate, userID, userBalanceInPenniesWithInterest);
+      TestudoBankRepository.setCustomerNumberOfDepositsForInterest(jdbcTemplate, userID, 0);
       return "account_info";
     } else {
       return "welcome";
