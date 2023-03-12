@@ -1727,7 +1727,7 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
    * @throws ScriptException
    */
   @Test
-  public void testEdgeCase20ApplyingInterestToBalance() throws SQLException, ScriptException {
+  public void testEdgeCase2001ApplyingInterestToBalance() throws SQLException, ScriptException {
     // initialize customer1 with a balance of $123.45 (to make sure this works for non-whole dollar amounts). represented as pennies in the DB.
     double CUSTOMER1_BALANCE = 123.45;
     double INTEREST_RATE = 1.015;
@@ -1764,3 +1764,5 @@ public void testTransferPaysOverdraftAndDepositsRemainder() throws SQLException,
     assertEquals(0,(int)customer1Data.get("NumDepositsForInterest"));
   }
 }
+    
+
