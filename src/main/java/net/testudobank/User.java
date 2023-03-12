@@ -35,6 +35,10 @@ public class User {
   @Setter @Getter
   private String transactionHist;
 
+  //// Interest Rate Fields ////
+  @Setter @Getter 
+  private String interestRate;
+
   //// Dispute Fields ////
 
   @Setter @Getter
