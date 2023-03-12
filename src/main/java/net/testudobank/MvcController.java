@@ -838,7 +838,7 @@ public class MvcController {
     int numOfDeposits = TestudoBankRepository.getCustomerNumberOfDepositsForInterest(jdbcTemplate, userID);
     double userBalanceInPennies = TestudoBankRepository.getCustomerCashBalanceInPennies(jdbcTemplate, userID);
 
-    //Applies interest to user account, resets the number of deposits for interest back to 0, and updates the transaction history table
+    //Applies interest to user account and resets the number of deposits for interest back to 0
     if (numOfDeposits == NUM_DEPOSITS_FOR_INTEREST) {
       String currentTime = SQL_DATETIME_FORMATTER.format(new java.util.Date());
       int userBalanceInPenniesWithInterest = (int) (userBalanceInPennies * BALANCE_INTEREST_RATE);
@@ -851,5 +851,4 @@ public class MvcController {
       return "welcome";
     }
   }
-
 }
